@@ -1,9 +1,8 @@
 import os
 from langchain_anthropic import ChatAnthropic
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
 
 DB_DIR = "./chroma_db"
 
@@ -38,10 +37,11 @@ def generate_response(query: str, chat_history: list, provider: str = "ollama"):
     context = ""
     if retriever:
         docs = retriever.invoke(query)
-        context = "\n\n".join([d.page_content for d in docs])
+        context = "\n\n".join([f"Source: {d.metadata.get('source', 'Unknown')}\n{d.page_content}" for d in docs])
         
     system_prompt = f"""You are the Lenny Growth Assistant. You answer product and growth questions strictly using the provided context from Lenny's Podcast transcripts. 
 If the context does not contain the answer, you must state that you don't know based on the available material.
+When answering, you MUST cite or clearly identify the specific transcript/source you used based on the 'Source' metadata provided in the context.
 
 Context:
 {context}

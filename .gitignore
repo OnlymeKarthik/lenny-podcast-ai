@@ -1,0 +1,11 @@
+# Python / Backend
+backend/__pycache__/
+backend/chroma_db/
+backend/lennys-podcast-transcripts/
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store

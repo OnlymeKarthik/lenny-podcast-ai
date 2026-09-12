@@ -25,14 +25,22 @@ graph TD
 - **Artifact Viewer:** A split-pane component that isolates and renders HTML or Markdown blocks identified in the LLM's response.
 - **State Management:** React hooks for managing active sessions and message streaming.
 
-### 2.2 Backend API (FastAPI)
-- Provides RESTful endpoints for CRUD operations on sessions and messages.
-- Manages the orchestration between the database, the agent SDK, and the LLMs.
-- Handles error boundaries (e.g., catching LLM timeouts and returning structured error responses to the frontend).
+## Backend Architecture
 
-### 2.3 Agent Layer (LangChain / Anthropic SDK)
-- **Router:** Determines whether the user's input requires the RAG tool (Knowledge Base) or the Formatting tool (Ship 30 for 30).
-- **LLM Abstraction:** Implements a factory pattern to seamlessly switch between the `ChatAnthropic` and `ChatOllama` clients based on environment configuration.
+### API & Persistence (FastAPI + PostgreSQL)
+- **Framework**: Built natively on FastAPI, providing automatic OpenAPI specs, strong typing (Pydantic), and async-first capabilities.
+- **API Quality**: Implemented a dedicated `/health` endpoint to verify DB connections. All routes use structured response schemas, and a global exception handler catches and structures 500-level errors for API resilience.
+- **Database**: PostgreSQL (provisioned via Docker). Selected for transactional reliability and future extensibility (e.g. pgvector if we outgrow Chroma).
+- **ORM**: SQLAlchemy handles session persistence and message logging, tying each message to a user session.
+
+### Agent & Knowledge Base (Langchain + Chroma)
+- **Agent Integration**: Built using the Langchain framework, which abstracts both the Anthropic SDK (Cloud) and Ollama SDK (Local). This allows us to seamlessly toggle between the models while maintaining a uniform execution path. 
+- **Ingestion Strategy**:
+  - **Loading**: Transcripts are fetched from the `ChatPRD/lennys-podcast-transcripts` repository. We use Langchain's `DirectoryLoader` and `TextLoader` to recursively ingest `.md` files.
+  - **Chunking**: `RecursiveCharacterTextSplitter` chunks the documents into 500-character segments with a 50-character overlap to preserve semantic continuity across paragraph boundaries.
+  - **Indexing**: Chunks are embedded using `nomic-embed-text` and pushed to a persistent local ChromaDB instance (`./chroma_db`).
+  - **Refreshing**: The ingestion script (`ingest.py`) is designed as a standalone operational job. An admin can run it via `docker-compose exec backend python ingest.py` whenever new podcast files are added to the repo.
+  - **Tracing & Grounding**: `DirectoryLoader` automatically injects the source filepath into the chunk metadata (`metadata["source"]`). During retrieval, the agent dynamically prepends the `Source: <filepath>` to the context, and the system prompt strictly enforces that the LLM cite this source when generating grounded answers.
 
 ## 3. Database Schema (PostgreSQL)
 

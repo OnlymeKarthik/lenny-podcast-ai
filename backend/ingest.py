@@ -2,15 +2,15 @@ import os
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 
 # For demo purposes we use local ChromaDB and Ollama embeddings.
 DB_DIR = "./chroma_db"
-DATA_DIR = "./data"
+DATA_DIR = "./lennys-podcast-transcripts/episodes"
 
 def run_ingestion():
-    print("Loading documents...")
-    loader = DirectoryLoader(DATA_DIR, glob="*.md", loader_cls=TextLoader)
+    print("Loading documents from", DATA_DIR)
+    loader = DirectoryLoader(DATA_DIR, glob="**/*.md", loader_cls=TextLoader)
     docs = loader.load()
     
     print(f"Loaded {len(docs)} documents.")

@@ -6,7 +6,7 @@ from datetime import datetime
 class MessageBase(BaseModel):
     role: str
     content: str
-    metadata: Optional[dict[str, Any]] = {}
+    meta_data: Optional[dict[str, Any]] = {}
 
 class MessageCreate(MessageBase):
     pass
@@ -19,7 +19,8 @@ class MessageResponse(MessageBase):
     model_config = ConfigDict(from_attributes=True)
 
 class SessionBase(BaseModel):
-    title: str
+    title: str = "New Chat"
+    user_metadata: Optional[dict[str, Any]] = {}
 
 class SessionCreate(SessionBase):
     pass

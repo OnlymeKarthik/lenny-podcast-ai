@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api, Session, Message } from './api';
+import { api } from './api';
+import type { Session, Message } from './api';
 import { ArtifactViewer } from './components/ArtifactViewer';
 import { Send, PlusCircle, User, Bot, Loader2, Zap } from 'lucide-react';
 import './index.css';
