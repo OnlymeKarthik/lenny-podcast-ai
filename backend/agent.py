@@ -11,6 +11,9 @@ from langchain_core.retrievers import BaseRetriever
 from langchain_core.documents import Document
 from typing import AsyncGenerator
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 DB_DIR = "./chroma_db"
 DATA_DIR = "./lennys-podcast-transcripts/episodes"
@@ -71,8 +74,9 @@ def get_retriever():
             splits = text_splitter.split_documents(docs)
             bm25_retriever_cache = BM25Retriever.from_documents(splits)
             bm25_retriever_cache.k = 3
+            logger.info("BM25 retriever successfully initialized.")
         except Exception as e:
-            print(f"Warning: Failed to initialize BM25 retriever: {e}")
+            logger.error(f"Warning: Failed to initialize BM25 retriever (is the DB empty?): {e}")
             
     if bm25_retriever_cache:
         return CustomEnsembleRetriever(
@@ -110,7 +114,12 @@ def generate_response(query: str, chat_history: list, provider: str = "ollama"):
     context = ""
     if retriever:
         docs = retriever.invoke(query)
+        if not docs:
+            logger.warning("Retrieval returned empty results for query.")
         context = "\n\n".join([f"Source: {d.metadata.get('source', 'Unknown')}\n{d.page_content}" for d in docs])
+        logger.info(f"Retrieved {len(docs)} documents for context.")
+    else:
+        logger.warning("No retriever available (DB might not be initialized yet).")
         
     system_prompt = f"""You are the Lenny Growth Assistant. You answer product and growth questions strictly using the provided context from Lenny's Podcast transcripts. 
 If the context does not contain the answer, you must state that you don't know based on the available material.
@@ -162,7 +171,12 @@ async def generate_response_stream(query: str, chat_history: list, provider: str
     context = ""
     if retriever:
         docs = retriever.invoke(query)
+        if not docs:
+            logger.warning("Retrieval returned empty results for stream query.")
         context = "\n\n".join([f"Source: {d.metadata.get('source', 'Unknown')}\n{d.page_content}" for d in docs])
+        logger.info(f"Retrieved {len(docs)} documents for stream context.")
+    else:
+        logger.warning("No retriever available (DB might not be initialized yet).")
         
     system_prompt = f"""You are the Lenny Growth Assistant. You answer product and growth questions strictly using the provided context from Lenny's Podcast transcripts. 
 If the context does not contain the answer, you must state that you don't know based on the available material.
@@ -234,8 +248,11 @@ Requirements:
                         yield essay_chunk.content
                 yield "\n</artifact>"
                 
+                
             except Exception as parse_e:
+                logger.error(f"Error parsing tool args or generating essay: {parse_e}")
                 yield f"Error executing tool stream: {parse_e}"
                 
     except Exception as e:
+        logger.error(f"LLM streaming failure with provider {provider}: {str(e)}")
         yield f"Error streaming from LLM provider ({provider}): {str(e)}"

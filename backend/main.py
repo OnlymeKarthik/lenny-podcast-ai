@@ -15,6 +15,10 @@ from langchain_core.globals import set_llm_cache
 from langchain_community.cache import SQLAlchemyCache
 from contextlib import asynccontextmanager
 from watcher import start_watcher
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 # Create tables if they don't exist
 models.Base.metadata.create_all(bind=engine)
@@ -41,6 +45,7 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global exception at {request.url.path}: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"error": "Internal Server Error", "message": str(exc), "path": request.url.path}
@@ -51,7 +56,8 @@ def health_check(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         db_status = "connected"
-    except Exception:
+    except Exception as e:
+        logger.error(f"Database connection failed during health check: {e}")
         db_status = "disconnected"
     return {"status": "ok", "database": db_status}
 
@@ -98,16 +104,22 @@ async def chat(session_id: UUID, request: schemas.ChatRequest, db: Session = Dep
     
     async def response_streamer():
         full_text = ""
-        async for chunk in generate_response_stream(request.message, langchain_history, provider=request.llm_provider):
-            full_text += chunk
-            yield chunk
+        try:
+            async for chunk in generate_response_stream(request.message, langchain_history, provider=request.llm_provider):
+                full_text += chunk
+                yield chunk
+        except Exception as stream_e:
+            logger.error(f"Streaming error for session {session_id}: {stream_e}")
+            yield f"\n\n[System Error: LLM streaming failed. Please check Ollama connection.]"
             
         # Save assistant message to DB after stream finishes
-        # Use a fresh DB session because the original one might be closed by FastAPI dependency injection
-        with SessionLocal() as post_db:
-            ai_msg = models.Message(session_id=session_id, role="assistant", content=full_text)
-            post_db.add(ai_msg)
-            post_db.commit()
+        try:
+            with SessionLocal() as post_db:
+                ai_msg = models.Message(session_id=session_id, role="assistant", content=full_text)
+                post_db.add(ai_msg)
+                post_db.commit()
+        except Exception as db_e:
+            logger.error(f"Failed to persist assistant message to DB: {db_e}")
 
     return StreamingResponse(response_streamer(), media_type="text/event-stream")
 

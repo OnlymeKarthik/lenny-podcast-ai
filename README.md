@@ -44,3 +44,13 @@ To run backend tests, execute:
 docker-compose exec backend pip install pytest httpx
 docker-compose exec backend pytest test_main.py
 ```
+
+## Troubleshooting & Extending the System
+For client engineers taking over this project, here is a quick diagnostic guide:
+- **Empty Artifacts / Tool Hallucinations:** The prompt uses conditional binding. If a local model generates empty artifacts, ensure `OLLAMA_BASE_URL` is correct. The system logs model timeouts via `uvicorn` structured logging (check `docker-compose logs backend`).
+- **Database Connection Failures:** If `GET /health` returns `disconnected`, ensure the Postgres container is running. FastAPI natively handles unexpected DB disconnects gracefully and logs them via `main.py`.
+- **Empty Retrieval Results:** If answers aren't grounded, ChromaDB may not be fully initialized. Check the `backend` logs for `Retrieval returned empty results` warnings. You can manually force an ingestion run via `docker-compose exec backend python ingest.py`.
+- **Extending the Application:** 
+  - To add more models: Update the `get_llm()` factory in `agent.py`.
+  - To add new tools: Define a new `@tool` in `agent.py` and update the conditional binding logic.
+  - To add new transcript sources: Just drop `.md` files into `backend/lennys-podcast-transcripts/episodes`. The `watchdog` daemon will automatically detect and embed them without requiring a server restart!
