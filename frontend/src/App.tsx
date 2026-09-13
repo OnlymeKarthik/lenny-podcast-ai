@@ -195,9 +195,36 @@ function App() {
         
         <div className="message-feed">
           {messages.length === 0 && !isLoading && (
-            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '4rem' }}>
-              <h3>Welcome to the Lenny Growth Assistant</h3>
-              <p>Ask a question about B2B growth, or ask me to write a "Ship 30 for 30" essay.</p>
+            <div className="welcome-screen" style={{ textAlign: 'center', marginTop: '3rem' }}>
+              <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '1rem', background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Lenny Growth Assistant</h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '3rem' }}>Ask a question about B2B growth, or ask me to write a "Ship 30 for 30" essay.</p>
+              
+              <div className="starter-prompts">
+                {[
+                  "What are the most common mistakes founders make when trying to find product-market fit?",
+                  "Write a Ship 30 for 30 essay on how to build a growth team from scratch.",
+                  "According to the podcast, what is the best way to reduce churn in early-stage SaaS?",
+                  "How did Airbnb approach their early growth strategy?"
+                ].map((prompt, i) => (
+                  <button 
+                    key={i} 
+                    className="starter-prompt-card"
+                    onClick={() => {
+                      setInput(prompt);
+                      // Small timeout to allow state to update before sending
+                      setTimeout(() => {
+                        const fakeEvent = { key: 'Enter', shiftKey: false, preventDefault: () => {} } as any;
+                        const inputEl = document.querySelector('.chat-input') as HTMLTextAreaElement;
+                        if (inputEl) {
+                           inputEl.value = prompt;
+                        }
+                      }, 10);
+                    }}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {messages.map((msg, idx) => (
@@ -205,56 +232,52 @@ function App() {
               <div className={`avatar ${msg.role}`}>
                 {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
               </div>
-              <div className="message-content markdown-body">
-                <ReactMarkdown>{formatText(msg.content)}</ReactMarkdown>
-                {msg.role === 'assistant' && msg.id && !msg.id.startsWith("temp-") && !msg.id.startsWith("streaming-") && (
-                  <div className="feedback-container" style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                    <button 
-                      onClick={() => handleFeedback(msg.id, 1)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: feedbackMap[msg.id] === 1 ? 'var(--accent-primary)' : 'var(--text-secondary)' }}
-                      title="Good response"
-                    >
-                      <ThumbsUp size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleFeedback(msg.id, -1)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: feedbackMap[msg.id] === -1 ? 'red' : 'var(--text-secondary)' }}
-                      title="Bad response"
-                    >
-                      <ThumbsDown size={16} />
-                    </button>
-                  </div>
-                )}
-                {/* Follow-up Pills */}
-                {msg.role === 'assistant' && extractSuggestions(msg.content).length > 0 && !msg.id.startsWith("streaming-") && (
-                  <div className="suggestions-container" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}>
-                    {extractSuggestions(msg.content).map((q, i) => (
+              {msg.content === '' && msg.id && msg.id.startsWith("streaming-") ? (
+                <div className="message-content" style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}>
+                  <Loader2 size={16} className="animate-spin" style={{ marginRight: '0.5rem' }} />
+                  Thinking...
+                </div>
+              ) : (
+                <div className="message-content markdown-body">
+                  <ReactMarkdown>{formatText(msg.content)}</ReactMarkdown>
+                  {msg.role === 'assistant' && msg.id && !msg.id.startsWith("temp-") && !msg.id.startsWith("streaming-") && (
+                    <div className="feedback-container" style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                       <button 
-                        key={i}
-                        onClick={() => setInput(q)}
-                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer' }}
-                        onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
-                        onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                        onClick={() => handleFeedback(msg.id, 1)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: feedbackMap[msg.id] === 1 ? 'var(--accent-primary)' : 'var(--text-secondary)' }}
+                        title="Good response"
                       >
-                        {q}
+                        <ThumbsUp size={16} />
                       </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      <button 
+                        onClick={() => handleFeedback(msg.id, -1)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: feedbackMap[msg.id] === -1 ? 'red' : 'var(--text-secondary)' }}
+                        title="Bad response"
+                      >
+                        <ThumbsDown size={16} />
+                      </button>
+                    </div>
+                  )}
+                  {/* Follow-up Pills */}
+                  {msg.role === 'assistant' && extractSuggestions(msg.content).length > 0 && !msg.id.startsWith("streaming-") && (
+                    <div className="suggestions-container" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}>
+                      {extractSuggestions(msg.content).map((q, i) => (
+                        <button 
+                          key={i}
+                          onClick={() => setInput(q)}
+                          style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer' }}
+                          onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                          onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
-          {isLoading && (
-            <div className="message">
-              <div className="avatar assistant">
-                <Bot size={20} />
-              </div>
-              <div className="message-content" style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}>
-                <Loader2 size={16} className="animate-spin" style={{ marginRight: '0.5rem' }} />
-                Thinking...
-              </div>
-            </div>
-          )}
           <div ref={messagesEndRef} />
         </div>
 

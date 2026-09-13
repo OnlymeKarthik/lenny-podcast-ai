@@ -11,7 +11,7 @@ import schemas
 from database import engine, get_db, SessionLocal
 from agent import generate_response, generate_response_stream
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain.globals import set_llm_cache
+from langchain_core.globals import set_llm_cache
 from langchain_community.cache import SQLAlchemyCache
 from contextlib import asynccontextmanager
 from watcher import start_watcher

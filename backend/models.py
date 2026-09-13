@@ -24,7 +24,7 @@ class Message(Base):
     role = Column(String(50), nullable=False) # 'user', 'assistant'
     content = Column(Text, nullable=False)
     meta_data = Column(JSON, default={}) # For storing artifact info, citations, etc
-    feedback = Column(Column('feedback', type_=Integer), nullable=True) # 1=thumbs up, -1=thumbs down
+    feedback = Column(Integer, nullable=True) # 1=thumbs up, -1=thumbs down
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     session = relationship("Session", back_populates="messages")

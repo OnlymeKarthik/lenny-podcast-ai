@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) DEFAULT 'New Chat',
@@ -12,5 +14,6 @@ CREATE TABLE IF NOT EXISTS messages (
     role VARCHAR(50) NOT NULL,
     content TEXT NOT NULL,
     meta_data JSONB DEFAULT '{}'::jsonb,
+    feedback INTEGER,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

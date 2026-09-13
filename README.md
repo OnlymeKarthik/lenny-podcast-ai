@@ -1,6 +1,16 @@
-# The Lenny Growth Assistant
+# The Lenny Growth Assistant (God-Tier Edition)
 
 A full-stack, AI-powered conversational web application that ingests transcripts from Lenny's Podcast to answer product and growth questions, complete with a dual-pane Artifact Viewer for "Ship 30 for 30" style essays.
+
+## God-Tier Upgrades
+This repository includes massive upgrades to both the UI/UX and backend systems:
+- **Premium Glassmorphic UI:** A custom-built, modern frontend featuring frosted-glass elements, dynamic radial gradients, interactive starter prompts, and micro-animations.
+- **RAG Reciprocal Rank Fusion (RRF):** Utilizes an advanced hybrid ensemble retriever (ChromaDB Vector Search + BM25 Keyword Search) to maximize contextual accuracy.
+- **Real-Time Auto-Ingestion:** A background `watchdog` daemon runs inside the FastAPI process, instantly detecting and embedding any new podcast transcripts added to the directory.
+- **LLM Caching:** Langchain SQLAlchemy caching eliminates redundant processing and dramatically speeds up repeated queries.
+- **Smart Follow-Ups:** The LLM natively generates dynamic, contextual follow-up questions at the end of its response, rendered as interactive pills in the UI.
+- **Telemetry & Feedback:** Persistent upvote/downvote buttons let users evaluate responses. Feedback is stored directly in the PostgreSQL `messages` table.
+- **Smart Tool Binding:** Intelligent prompt engineering and conditional tool binding prevent aggressive local 8B models (like Llama 3.1) from hallucinating tools when not explicitly requested.
 
 ## Architecture & Design
 Please see [architecture.md](./architecture.md), [design.md](./design.md), and [PRD.md](./PRD.md) for full documentation on system design, UI/UX decisions, and scoping constraints.
@@ -8,14 +18,13 @@ Please see [architecture.md](./architecture.md), [design.md](./design.md), and [
 ## Prerequisites
 - Docker and Docker Compose
 - Ollama (installed locally for testing local models)
-- An Anthropic API Key (optional, if testing cloud provider)
 
 ## Setup & Running locally
 
 1. **Clone the repository.**
-2. **Start Ollama** locally and pull a model (e.g., `llama3` and `nomic-embed-text`):
+2. **Start Ollama** locally and pull the required models:
    ```bash
-   ollama pull llama3
+   ollama pull llama3.1
    ollama pull nomic-embed-text
    ```
 3. **Configure Environment:**
@@ -25,20 +34,9 @@ Please see [architecture.md](./architecture.md), [design.md](./design.md), and [
    ```bash
    docker-compose up --build
    ```
-5. **Data Ingestion (First run only):**
-   In a new terminal, run the ingestion script to embed the dummy transcripts:
-   ```bash
-   docker-compose exec backend python ingest.py
-   ```
-
-6. **Access the App:**
+   *(Note: The auto-ingestion daemon will automatically pick up and embed the transcripts!)*
+5. **Access the App:**
    Open your browser to `http://localhost:5173`.
-
-## Manual Test Plan (UI)
-1. **Empty State:** Verify the app loads a blank chat.
-2. **Create Session:** Type a message and hit enter. Verify a session is created in the sidebar.
-3. **Artifact Generation:** Ask the assistant to "Write a Ship 30 for 30 essay on activation". Wait for the `<artifact>` block to trigger the right-side pane.
-4. **LLM Toggle:** Switch the provider at the top from Ollama to Claude and send another message.
 
 ## Automated Tests
 To run backend tests, execute:
@@ -46,5 +44,3 @@ To run backend tests, execute:
 docker-compose exec backend pip install pytest httpx
 docker-compose exec backend pytest test_main.py
 ```
-# lenny-podcast-ai
-# lenny-podcast-ai
