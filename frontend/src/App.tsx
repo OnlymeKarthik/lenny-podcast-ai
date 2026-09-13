@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from './api';
 import type { Session, Message } from './api';
 import { ArtifactViewer } from './components/ArtifactViewer';
-import { Send, PlusCircle, User, Bot, Loader2, Zap } from 'lucide-react';
+import { Send, PlusCircle, User, Bot, Loader2, Zap, ThumbsUp, ThumbsDown } from 'lucide-react';
 import './index.css';
 import ReactMarkdown from 'react-markdown';
 
@@ -14,6 +14,7 @@ function App() {
   const [provider, setProvider] = useState<'ollama' | 'anthropic'>('ollama');
   const [isLoading, setIsLoading] = useState(false);
   const [activeArtifact, setActiveArtifact] = useState<string | null>(null);
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,9 +60,17 @@ function App() {
 
   const formatText = (text: string) => {
     let formatted = text.replace(/<artifact>[\s\S]*?<\/artifact>/g, '\n\n*(Artifact generated. View on the right pane)*\n\n');
-    // Format citations beautifully
     formatted = formatted.replace(/Source: (.*?\.md)/g, '📄 **Source:** `$1`');
+    formatted = formatted.replace(/<suggestions>[\s\S]*?<\/suggestions>/g, '');
     return formatted;
+  };
+
+  const extractSuggestions = (text: string) => {
+    const match = text.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
+    if (!match) return [];
+    return match[1].split('\n')
+      .map(l => l.replace(/^\d+\.\s*/, '').trim())
+      .filter(l => l.length > 5);
   };
 
   const checkForArtifacts = (msgs: Message[]) => {
@@ -73,6 +82,15 @@ function App() {
           return;
         }
       }
+    }
+  };
+
+  const handleFeedback = async (msgId: string, val: number) => {
+    setFeedbackMap(prev => ({ ...prev, [msgId]: val }));
+    try {
+      await api.submitFeedback(msgId, val);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -189,6 +207,40 @@ function App() {
               </div>
               <div className="message-content markdown-body">
                 <ReactMarkdown>{formatText(msg.content)}</ReactMarkdown>
+                {msg.role === 'assistant' && msg.id && !msg.id.startsWith("temp-") && !msg.id.startsWith("streaming-") && (
+                  <div className="feedback-container" style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                    <button 
+                      onClick={() => handleFeedback(msg.id, 1)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: feedbackMap[msg.id] === 1 ? 'var(--accent-primary)' : 'var(--text-secondary)' }}
+                      title="Good response"
+                    >
+                      <ThumbsUp size={16} />
+                    </button>
+                    <button 
+                      onClick={() => handleFeedback(msg.id, -1)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: feedbackMap[msg.id] === -1 ? 'red' : 'var(--text-secondary)' }}
+                      title="Bad response"
+                    >
+                      <ThumbsDown size={16} />
+                    </button>
+                  </div>
+                )}
+                {/* Follow-up Pills */}
+                {msg.role === 'assistant' && extractSuggestions(msg.content).length > 0 && !msg.id.startsWith("streaming-") && (
+                  <div className="suggestions-container" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}>
+                    {extractSuggestions(msg.content).map((q, i) => (
+                      <button 
+                        key={i}
+                        onClick={() => setInput(q)}
+                        style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer' }}
+                        onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                        onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}

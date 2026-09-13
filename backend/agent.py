@@ -95,6 +95,14 @@ def generate_response(query: str, chat_history: list, provider: str = "ollama"):
 If the context does not contain the answer, you must state that you don't know based on the available material.
 When answering, you MUST cite or clearly identify the specific transcript/source you used based on the 'Source' metadata provided in the context.
 
+AT THE VERY END of your response, you MUST generate exactly 3 highly relevant follow-up questions the user could ask based on this topic. 
+Wrap them strictly in an XML block like this:
+<suggestions>
+1. First follow-up question?
+2. Second follow-up question?
+3. Third follow-up question?
+</suggestions>
+
 Context:
 {context}
 """
@@ -132,6 +140,14 @@ async def generate_response_stream(query: str, chat_history: list, provider: str
     system_prompt = f"""You are the Lenny Growth Assistant. You answer product and growth questions strictly using the provided context from Lenny's Podcast transcripts. 
 If the context does not contain the answer, you must state that you don't know based on the available material.
 When answering, you MUST cite or clearly identify the specific transcript/source you used based on the 'Source' metadata provided in the context.
+
+AT THE VERY END of your response, you MUST generate exactly 3 highly relevant follow-up questions the user could ask based on this topic. 
+Wrap them strictly in an XML block like this:
+<suggestions>
+1. First follow-up question?
+2. Second follow-up question?
+3. Third follow-up question?
+</suggestions>
 
 Context:
 {context}

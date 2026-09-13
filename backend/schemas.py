@@ -7,6 +7,7 @@ class MessageBase(BaseModel):
     role: str
     content: str
     meta_data: Optional[dict[str, Any]] = {}
+    feedback: Optional[int] = None
 
 class MessageCreate(MessageBase):
     pass
@@ -36,3 +37,6 @@ class SessionResponse(SessionBase):
 class ChatRequest(BaseModel):
     message: str
     llm_provider: str = "ollama" # or "anthropic"
+
+class FeedbackRequest(BaseModel):
+    feedback: int # 1 or -1

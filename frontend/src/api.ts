@@ -62,5 +62,13 @@ export const api = {
       content: fullText,
       created_at: new Date().toISOString()
     };
+  },
+  
+  submitFeedback: async (msgId: string, feedback: number): Promise<void> => {
+    await fetch(`${API_BASE}/messages/${msgId}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback })
+    });
   }
 };

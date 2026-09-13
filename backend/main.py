@@ -11,11 +11,25 @@ import schemas
 from database import engine, get_db, SessionLocal
 from agent import generate_response, generate_response_stream
 from langchain_core.messages import HumanMessage, AIMessage
+from langchain.globals import set_llm_cache
+from langchain_community.cache import SQLAlchemyCache
+from contextlib import asynccontextmanager
+from watcher import start_watcher
 
 # Create tables if they don't exist
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Lenny Growth Assistant API")
+# Setup exact-match caching for LLM responses
+set_llm_cache(SQLAlchemyCache(engine=engine))
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start the background live ingestion watcher
+    start_watcher()
+    yield
+    # Shutdown logic if needed
+
+app = FastAPI(title="Lenny Growth Assistant API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -96,6 +110,16 @@ async def chat(session_id: UUID, request: schemas.ChatRequest, db: Session = Dep
             post_db.commit()
 
     return StreamingResponse(response_streamer(), media_type="text/event-stream")
+
+@app.post("/messages/{msg_id}/feedback")
+def submit_feedback(msg_id: UUID, request: schemas.FeedbackRequest, db: Session = Depends(get_db)):
+    msg = db.query(models.Message).filter(models.Message.id == msg_id).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+        
+    msg.feedback = request.feedback
+    db.commit()
+    return {"status": "success"}
 
 if __name__ == "__main__":
     import uvicorn
