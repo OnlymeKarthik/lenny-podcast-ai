@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -8,8 +8,8 @@ from uuid import UUID
 
 import models
 import schemas
-from database import engine, get_db
-from agent import generate_response
+from database import engine, get_db, SessionLocal
+from agent import generate_response, generate_response_stream
 from langchain_core.messages import HumanMessage, AIMessage
 
 # Create tables if they don't exist
@@ -60,8 +60,8 @@ def get_session(session_id: UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Session not found")
     return db_session
 
-@app.post("/sessions/{session_id}/chat", response_model=schemas.MessageResponse)
-def chat(session_id: UUID, request: schemas.ChatRequest, db: Session = Depends(get_db)):
+@app.post("/sessions/{session_id}/chat")
+async def chat(session_id: UUID, request: schemas.ChatRequest, db: Session = Depends(get_db)):
     db_session = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not db_session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -79,16 +79,23 @@ def chat(session_id: UUID, request: schemas.ChatRequest, db: Session = Depends(g
         else:
             langchain_history.append(AIMessage(content=msg.content))
             
-    # Generate response
-    ai_text = generate_response(request.message, langchain_history, provider=request.llm_provider)
-    
-    # Save assistant message
-    ai_msg = models.Message(session_id=session_id, role="assistant", content=ai_text)
-    db.add(ai_msg)
+    # Commit user message immediately so it's saved before the stream starts
     db.commit()
-    db.refresh(ai_msg)
     
-    return ai_msg
+    async def response_streamer():
+        full_text = ""
+        async for chunk in generate_response_stream(request.message, langchain_history, provider=request.llm_provider):
+            full_text += chunk
+            yield chunk
+            
+        # Save assistant message to DB after stream finishes
+        # Use a fresh DB session because the original one might be closed by FastAPI dependency injection
+        with SessionLocal() as post_db:
+            ai_msg = models.Message(session_id=session_id, role="assistant", content=full_text)
+            post_db.add(ai_msg)
+            post_db.commit()
+
+    return StreamingResponse(response_streamer(), media_type="text/event-stream")
 
 if __name__ == "__main__":
     import uvicorn

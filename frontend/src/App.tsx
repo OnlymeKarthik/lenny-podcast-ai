@@ -57,8 +57,11 @@ function App() {
     return artifactMatch ? artifactMatch[1] : null;
   };
 
-  const stripArtifactTags = (text: string) => {
-    return text.replace(/<artifact>[\s\S]*?<\/artifact>/g, '*(Artifact generated. View on the right pane)*');
+  const formatText = (text: string) => {
+    let formatted = text.replace(/<artifact>[\s\S]*?<\/artifact>/g, '\n\n*(Artifact generated. View on the right pane)*\n\n');
+    // Format citations beautifully
+    formatted = formatted.replace(/Source: (.*?\.md)/g, '📄 **Source:** `$1`');
+    return formatted;
   };
 
   const checkForArtifacts = (msgs: Message[]) => {
@@ -88,8 +91,35 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await api.sendMessage(currentSessionId, userMsg.content, provider);
-      setMessages(prev => [...prev, response]);
+      const tempId = "streaming-" + Date.now();
+      const streamingMsg: Message = {
+        id: tempId,
+        role: 'assistant',
+        content: '',
+        created_at: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, streamingMsg]);
+      
+      const response = await api.sendMessage(currentSessionId, userMsg.content, provider, (chunk) => {
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          const target = newMsgs.find(m => m.id === tempId);
+          if (target) {
+            target.content += chunk;
+          }
+          return newMsgs;
+        });
+      });
+      
+      setMessages(prev => {
+        const newMsgs = [...prev];
+        const targetIdx = newMsgs.findIndex(m => m.id === tempId);
+        if (targetIdx !== -1) {
+          newMsgs[targetIdx] = response;
+        }
+        return newMsgs;
+      });
       
       const artifact = extractArtifact(response.content);
       if (artifact) {
@@ -97,7 +127,6 @@ function App() {
       }
     } catch (error) {
       console.error("Failed to send message", error);
-      // Could show a toast error here
     } finally {
       setIsLoading(false);
     }
@@ -159,7 +188,7 @@ function App() {
                 {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
               </div>
               <div className="message-content markdown-body">
-                <ReactMarkdown>{stripArtifactTags(msg.content)}</ReactMarkdown>
+                <ReactMarkdown>{formatText(msg.content)}</ReactMarkdown>
               </div>
             </div>
           ))}
