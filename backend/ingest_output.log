@@ -1,69 +1,215 @@
 /app/ingest.py:2: DeprecationWarning: `langchain-community` is being sunset and is no longer actively maintained. See https://github.com/langchain-ai/langchain-community/issues/674 for details and migration guidance toward standalone integration packages.
   from langchain_community.document_loaders import DirectoryLoader, TextLoader
 Loading documents from ./lennys-podcast-transcripts/episodes
-Loaded 20 documents. Limiting to 20 for fast local embedding.
-Split into 6063 chunks. Creating vector store...
-/app/ingest.py:34: LangChainDeprecationWarning: The class `Chroma` was deprecated in LangChain 0.2.9 and will be removed in 1.0. An updated version of the class exists in the `langchain-chroma package and should be used instead. To use it run `pip install -U `langchain-chroma` and import as `from `langchain_chroma import Chroma``.
+Loaded 303 documents.
+Split into 94910 chunks. Creating vector store...
+/app/ingest.py:31: LangChainDeprecationWarning: The class `Chroma` was deprecated in LangChain 0.2.9 and will be removed in 1.0. An updated version of the class exists in the `langchain-chroma package and should be used instead. To use it run `pip install -U `langchain-chroma` and import as `from `langchain_chroma import Chroma``.
   vectorstore = Chroma(
-Ingested batch 1/61
-Ingested batch 2/61
-Ingested batch 3/61
-Ingested batch 4/61
-Ingested batch 5/61
-Ingested batch 6/61
-Ingested batch 7/61
-Ingested batch 8/61
-Ingested batch 9/61
-Ingested batch 10/61
-Ingested batch 11/61
-Ingested batch 12/61
-Ingested batch 13/61
-Ingested batch 14/61
-Ingested batch 15/61
-Ingested batch 16/61
-Ingested batch 17/61
-Ingested batch 18/61
-Ingested batch 19/61
-Ingested batch 20/61
-Ingested batch 21/61
-Ingested batch 22/61
-Ingested batch 23/61
-Ingested batch 24/61
-Ingested batch 25/61
-Ingested batch 26/61
-Ingested batch 27/61
-Ingested batch 28/61
-Ingested batch 29/61
-Ingested batch 30/61
-Ingested batch 31/61
-Ingested batch 32/61
-Ingested batch 33/61
-Ingested batch 34/61
-Ingested batch 35/61
-Ingested batch 36/61
-Ingested batch 37/61
-Ingested batch 38/61
-Ingested batch 39/61
-Ingested batch 40/61
-Ingested batch 41/61
-Ingested batch 42/61
-Ingested batch 43/61
-Ingested batch 44/61
-Ingested batch 45/61
-Ingested batch 46/61
-Ingested batch 47/61
-Ingested batch 48/61
-Ingested batch 49/61
-Ingested batch 50/61
-Ingested batch 51/61
-Ingested batch 52/61
-Ingested batch 53/61
-Ingested batch 54/61
-Ingested batch 55/61
-Ingested batch 56/61
-Ingested batch 57/61
-Ingested batch 58/61
-Ingested batch 59/61
-Ingested batch 60/61
-Ingested batch 61/61
-Ingestion complete. Database persisted to ./chroma_db
+Ingested batch 1/950
+Ingested batch 2/950
+Ingested batch 3/950
+Ingested batch 4/950
+Ingested batch 5/950
+Ingested batch 6/950
+Ingested batch 7/950
+Ingested batch 8/950
+Ingested batch 9/950
+Ingested batch 10/950
+Ingested batch 11/950
+Ingested batch 12/950
+Ingested batch 13/950
+Ingested batch 14/950
+Ingested batch 15/950
+Ingested batch 16/950
+Ingested batch 17/950
+Ingested batch 18/950
+Ingested batch 19/950
+Ingested batch 20/950
+Ingested batch 21/950
+Ingested batch 22/950
+Ingested batch 23/950
+Ingested batch 24/950
+Ingested batch 25/950
+Ingested batch 26/950
+Ingested batch 27/950
+Ingested batch 28/950
+Ingested batch 29/950
+Ingested batch 30/950
+Ingested batch 31/950
+Ingested batch 32/950
+Ingested batch 33/950
+Ingested batch 34/950
+Ingested batch 35/950
+Ingested batch 36/950
+Ingested batch 37/950
+Ingested batch 38/950
+Ingested batch 39/950
+Ingested batch 40/950
+Ingested batch 41/950
+Ingested batch 42/950
+Ingested batch 43/950
+Ingested batch 44/950
+Ingested batch 45/950
+Ingested batch 46/950
+Ingested batch 47/950
+Ingested batch 48/950
+Ingested batch 49/950
+Ingested batch 50/950
+Ingested batch 51/950
+Ingested batch 52/950
+Ingested batch 53/950
+Ingested batch 54/950
+Ingested batch 55/950
+Ingested batch 56/950
+Ingested batch 57/950
+Ingested batch 58/950
+Ingested batch 59/950
+Ingested batch 60/950
+Ingested batch 61/950
+Ingested batch 62/950
+Ingested batch 63/950
+Ingested batch 64/950
+Ingested batch 65/950
+Ingested batch 66/950
+Ingested batch 67/950
+Ingested batch 68/950
+Ingested batch 69/950
+Ingested batch 70/950
+Ingested batch 71/950
+Ingested batch 72/950
+Ingested batch 73/950
+Ingested batch 74/950
+Ingested batch 75/950
+Ingested batch 76/950
+Ingested batch 77/950
+Ingested batch 78/950
+Ingested batch 79/950
+Ingested batch 80/950
+Ingested batch 81/950
+Ingested batch 82/950
+Ingested batch 83/950
+Ingested batch 84/950
+Ingested batch 85/950
+Ingested batch 86/950
+Ingested batch 87/950
+Ingested batch 88/950
+Ingested batch 89/950
+Ingested batch 90/950
+Ingested batch 91/950
+Ingested batch 92/950
+Ingested batch 93/950
+Ingested batch 94/950
+Ingested batch 95/950
+Ingested batch 96/950
+Ingested batch 97/950
+Ingested batch 98/950
+Ingested batch 99/950
+Ingested batch 100/950
+Ingested batch 101/950
+Ingested batch 102/950
+Ingested batch 103/950
+Ingested batch 104/950
+Ingested batch 105/950
+Ingested batch 106/950
+Ingested batch 107/950
+Ingested batch 108/950
+Ingested batch 109/950
+Ingested batch 110/950
+Ingested batch 111/950
+Ingested batch 112/950
+Ingested batch 113/950
+Ingested batch 114/950
+Ingested batch 115/950
+Ingested batch 116/950
+Ingested batch 117/950
+Ingested batch 118/950
+Ingested batch 119/950
+Ingested batch 120/950
+Ingested batch 121/950
+Ingested batch 122/950
+Ingested batch 123/950
+Ingested batch 124/950
+Ingested batch 125/950
+Ingested batch 126/950
+Ingested batch 127/950
+Ingested batch 128/950
+Ingested batch 129/950
+Ingested batch 130/950
+Ingested batch 131/950
+Ingested batch 132/950
+Ingested batch 133/950
+Ingested batch 134/950
+Ingested batch 135/950
+Ingested batch 136/950
+Ingested batch 137/950
+Ingested batch 138/950
+Ingested batch 139/950
+Ingested batch 140/950
+Ingested batch 141/950
+Ingested batch 142/950
+Ingested batch 143/950
+Ingested batch 144/950
+Ingested batch 145/950
+Ingested batch 146/950
+Ingested batch 147/950
+Ingested batch 148/950
+Ingested batch 149/950
+Ingested batch 150/950
+Ingested batch 151/950
+Ingested batch 152/950
+Ingested batch 153/950
+Ingested batch 154/950
+Ingested batch 155/950
+Ingested batch 156/950
+Ingested batch 157/950
+Ingested batch 158/950
+Ingested batch 159/950
+Ingested batch 160/950
+Ingested batch 161/950
+Ingested batch 162/950
+Ingested batch 163/950
+Ingested batch 164/950
+Ingested batch 165/950
+Ingested batch 166/950
+Ingested batch 167/950
+Ingested batch 168/950
+Ingested batch 169/950
+Ingested batch 170/950
+Ingested batch 171/950
+Ingested batch 172/950
+Ingested batch 173/950
+Ingested batch 174/950
+Ingested batch 175/950
+Ingested batch 176/950
+Ingested batch 177/950
+Ingested batch 178/950
+Ingested batch 179/950
+Ingested batch 180/950
+Ingested batch 181/950
+Ingested batch 182/950
+Ingested batch 183/950
+Ingested batch 184/950
+Ingested batch 185/950
+Traceback (most recent call last):
+  File "/app/ingest.py", line 46, in <module>
+    run_ingestion()
+  File "/app/ingest.py", line 40, in run_ingestion
+    vectorstore.add_documents(batch)
+  File "/usr/local/lib/python3.11/site-packages/langchain_core/vectorstores/base.py", line 258, in add_documents
+    return self.add_texts(texts, metadatas, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/langchain_community/vectorstores/chroma.py", line 277, in add_texts
+    embeddings = self._embedding_function.embed_documents(texts)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/langchain_ollama/embeddings.py", line 325, in embed_documents
+    return self._client.embed(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/ollama/_client.py", line 415, in embed
+    return self._request(
+           ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/ollama/_client.py", line 199, in _request
+    return cls(**self._request_raw(*args, **kwargs).json())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/ollama/_client.py", line 143, in _request_raw
+    raise ResponseError(e.response.text, e.response.status_code) from None
+ollama._types.ResponseError: do embedding request: Post "http://127.0.0.1:55187/v1/embeddings": dial tcp 127.0.0.1:55187: connectex: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond. (status code: 400)
