@@ -58,3 +58,20 @@ def test_chat_persistence():
     assert data["role"] == "assistant"
     assert "content" in data
     assert data["session_id"] == session_id
+
+def test_retrieval_system():
+    # Test that the vector store can be initialized and queried (even if empty)
+    from agent import get_retriever
+    retriever = get_retriever()
+    if retriever:
+        docs = retriever.invoke("growth tactics")
+        assert isinstance(docs, list)
+
+def test_agent_routing():
+    # Test that the routing logic correctly falls back or initializes the LLM
+    from agent import get_llm
+    llm = get_llm("ollama")
+    assert llm is not None
+    # Check that model is set correctly
+    assert hasattr(llm, "model")
+

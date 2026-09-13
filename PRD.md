@@ -42,3 +42,16 @@
 2. **Knowledge Retrieval:** User asks a growth question. The backend chunks the query, retrieves relevant transcript sections from the vector store, and passes them to the agent.
 3. **Artifact Generation:** User requests a "Ship 30 for 30" essay. The agent invokes the specific formatting skill and returns the essay wrapped in an artifact block.
 4. **Artifact Rendering:** The frontend detects the artifact block and renders the Markdown/HTML in the side panel.
+
+## 3. Acceptance Criteria
+- **AC1 (RAG Retrieval):** The system must successfully query ChromaDB and inject relevant podcast transcripts into the LLM context.
+- **AC2 (Tool Calling):** The system must successfully execute the `generate_ship_30_essay` tool when explicitly requested, rendering the output as an artifact.
+- **AC3 (Hallucination Prevention):** The system must NOT attempt to execute the essay tool on standard queries (enforced via conditional tool binding).
+- **AC4 (UI/UX):** The frontend must elegantly handle loading states (spinners) and stream the LLM response without double-rendering message bubbles.
+
+## 4. Implementation Plan (Executed)
+- **Phase 1 (Foundation):** Set up Docker Compose, FastAPI, and Postgres schema (`sessions`, `messages`).
+- **Phase 2 (Knowledge Base):** Implement Langchain Document Loaders and Recursive splitters to ingest the transcripts into ChromaDB.
+- **Phase 3 (Agentic Core):** Build the FastAPI endpoints (`/sessions`, `/chat`) and the Langchain agent to route queries to Ollama (Llama 3.1).
+- **Phase 4 (UI & Artifacts):** Develop the React frontend with a split-pane layout to render streaming text and isolated Artifacts.
+- **Phase 5 (God-Tier Polish):** Implement Reciprocal Rank Fusion (RRF), Live Ingestion Daemons, Telemetry (upvotes/downvotes), dynamic suggestions, and a premium glassmorphic UI.

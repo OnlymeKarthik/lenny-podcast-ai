@@ -32,3 +32,8 @@ The application is structured as a dual-pane layout (on desktop):
 - **Contrast:** Ensure all text passes WCAG AA contrast ratios against the dark background.
 - **Keyboard Navigation:** The input field should auto-focus on load. Users should be able to submit messages with `Enter` (and use `Shift+Enter` for new lines).
 - **Screen Readers:** Use semantic HTML tags (`<main>`, `<aside>`, `<nav>`) and ARIA labels for buttons (like the sidebar toggle or send button).
+
+## 6. Design Decisions
+- **Why Glassmorphism?** To provide a modern, "God-Tier" aesthetic that differentiates the tool from generic internal tools. The frosted glass (`backdrop-filter`) creates a sense of depth.
+- **Why hide source citations in text?** Raw markdown filenames clutter the conversational flow. We enforce a clean UI by strictly instructing the LLM to weave answers naturally without robotic citation paths.
+- **Why suggestion pills?** To reduce friction. Users often don't know what to ask next; dynamically generated follow-up questions dramatically improve engagement and task completion rates.
