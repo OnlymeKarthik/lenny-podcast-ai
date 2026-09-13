@@ -28,11 +28,17 @@ def run_ingestion():
         base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     )
     
-    vectorstore = Chroma.from_documents(
-        documents=splits, 
-        embedding=embeddings, 
-        persist_directory=DB_DIR
+    vectorstore = Chroma(
+        persist_directory=DB_DIR,
+        embedding_function=embeddings
     )
+    
+    batch_size = 100
+    total_batches = (len(splits) // batch_size) + 1
+    for i in range(0, len(splits), batch_size):
+        batch = splits[i:i + batch_size]
+        vectorstore.add_documents(batch)
+        print(f"Ingested batch {i//batch_size + 1}/{total_batches}")
     
     print("Ingestion complete. Database persisted to", DB_DIR)
 

@@ -1,0 +1,69 @@
+/app/ingest.py:2: DeprecationWarning: `langchain-community` is being sunset and is no longer actively maintained. See https://github.com/langchain-ai/langchain-community/issues/674 for details and migration guidance toward standalone integration packages.
+  from langchain_community.document_loaders import DirectoryLoader, TextLoader
+Loading documents from ./lennys-podcast-transcripts/episodes
+Loaded 20 documents. Limiting to 20 for fast local embedding.
+Split into 6063 chunks. Creating vector store...
+/app/ingest.py:34: LangChainDeprecationWarning: The class `Chroma` was deprecated in LangChain 0.2.9 and will be removed in 1.0. An updated version of the class exists in the `langchain-chroma package and should be used instead. To use it run `pip install -U `langchain-chroma` and import as `from `langchain_chroma import Chroma``.
+  vectorstore = Chroma(
+Ingested batch 1/61
+Ingested batch 2/61
+Ingested batch 3/61
+Ingested batch 4/61
+Ingested batch 5/61
+Ingested batch 6/61
+Ingested batch 7/61
+Ingested batch 8/61
+Ingested batch 9/61
+Ingested batch 10/61
+Ingested batch 11/61
+Ingested batch 12/61
+Ingested batch 13/61
+Ingested batch 14/61
+Ingested batch 15/61
+Ingested batch 16/61
+Ingested batch 17/61
+Ingested batch 18/61
+Ingested batch 19/61
+Ingested batch 20/61
+Ingested batch 21/61
+Ingested batch 22/61
+Ingested batch 23/61
+Ingested batch 24/61
+Ingested batch 25/61
+Ingested batch 26/61
+Ingested batch 27/61
+Ingested batch 28/61
+Ingested batch 29/61
+Ingested batch 30/61
+Ingested batch 31/61
+Ingested batch 32/61
+Ingested batch 33/61
+Ingested batch 34/61
+Ingested batch 35/61
+Ingested batch 36/61
+Ingested batch 37/61
+Ingested batch 38/61
+Ingested batch 39/61
+Ingested batch 40/61
+Ingested batch 41/61
+Ingested batch 42/61
+Ingested batch 43/61
+Ingested batch 44/61
+Ingested batch 45/61
+Ingested batch 46/61
+Ingested batch 47/61
+Ingested batch 48/61
+Ingested batch 49/61
+Ingested batch 50/61
+Ingested batch 51/61
+Ingested batch 52/61
+Ingested batch 53/61
+Ingested batch 54/61
+Ingested batch 55/61
+Ingested batch 56/61
+Ingested batch 57/61
+Ingested batch 58/61
+Ingested batch 59/61
+Ingested batch 60/61
+Ingested batch 61/61
+Ingestion complete. Database persisted to ./chroma_db
