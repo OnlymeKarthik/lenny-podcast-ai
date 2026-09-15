@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from './api';
 import type { Session, Message } from './api';
 import { ArtifactViewer } from './components/ArtifactViewer';
-import { Send, PlusCircle, User, Bot, Loader2, Zap, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Send, PlusCircle, User, Bot, Zap, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
 import './index.css';
 import ReactMarkdown from 'react-markdown';
+import { Toaster, toast } from 'sonner';
 
 function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -13,6 +14,7 @@ function App() {
   const [input, setInput] = useState('');
   const [provider, setProvider] = useState<'ollama' | 'anthropic'>('ollama');
   const [isLoading, setIsLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
   const [activeArtifact, setActiveArtifact] = useState<string | null>(null);
   const [feedbackMap, setFeedbackMap] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -32,25 +34,58 @@ function App() {
   }, [messages, isLoading]);
 
   const loadSessions = async () => {
-    const data = await api.getSessions();
-    setSessions(data);
-    if (data.length > 0 && !currentSessionId) {
-      setCurrentSessionId(data[0].id);
+    try {
+      const data = await api.getSessions();
+      setSessions(data);
+      setIsConnected(true);
+      if (data.length > 0 && !currentSessionId) {
+        setCurrentSessionId(data[0].id);
+      }
+    } catch (e) {
+      console.error("Failed to load sessions", e);
+      setIsConnected(false);
+      toast.error("Cannot connect to backend", { description: "Is the server running on port 8000?" });
     }
   };
 
   const loadMessages = async (id: string) => {
-    const session = await api.getSession(id);
-    setMessages(session.messages || []);
-    checkForArtifacts(session.messages || []);
+    try {
+      const session = await api.getSession(id);
+      setMessages(session.messages || []);
+      checkForArtifacts(session.messages || []);
+    } catch (e) {
+      console.error("Failed to load messages", e);
+    }
   };
 
   const handleNewChat = async () => {
-    const session = await api.createSession();
-    setSessions([session, ...sessions]);
-    setCurrentSessionId(session.id);
-    setMessages([]);
-    setActiveArtifact(null);
+    try {
+      const session = await api.createSession();
+      toast.success("New chat started");
+      setSessions([session, ...sessions]);
+      setCurrentSessionId(session.id);
+      setMessages([]);
+      setActiveArtifact(null);
+    } catch (e) {
+      toast.error("Failed to create session");
+    }
+  };
+
+  const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent setting as current session
+    if (!window.confirm('Are you sure you want to delete this chat?')) return;
+    
+    try {
+      await api.deleteSession(id);
+      setSessions(prev => prev.filter(s => s.id !== id));
+      if (currentSessionId === id) {
+        setCurrentSessionId(sessions.length > 1 ? sessions.find(s => s.id !== id)?.id || null : null);
+        if (sessions.length <= 1) setMessages([]);
+      }
+      toast.success("Chat deleted");
+    } catch (error) {
+      toast.error("Failed to delete chat");
+    }
   };
 
   const extractArtifact = (text: string) => {
@@ -59,10 +94,11 @@ function App() {
   };
 
   const formatText = (text: string) => {
-    let formatted = text.replace(/<artifact>[\s\S]*?<\/artifact>/g, '\n\n*(Artifact generated. View on the right pane)*\n\n');
-    formatted = formatted.replace(/Source: (.*?\.md)/g, '📄 **Source:** `$1`');
+    // Remove artifact blocks from inline display
+    let formatted = text.replace(/<artifact>[\s\S]*?<\/artifact>/g, '\n\n*(Artifact generated — view in the right panel →)*\n\n');
+    // Remove suggestion blocks (rendered separately as pills)
     formatted = formatted.replace(/<suggestions>[\s\S]*?<\/suggestions>/g, '');
-    return formatted;
+    return formatted.trim();
   };
 
   const extractSuggestions = (text: string) => {
@@ -89,6 +125,7 @@ function App() {
     setFeedbackMap(prev => ({ ...prev, [msgId]: val }));
     try {
       await api.submitFeedback(msgId, val);
+      toast.success(val === 1 ? "Thanks for the feedback!" : "We'll improve on this");
     } catch (e) {
       console.error(e);
     }
@@ -105,6 +142,7 @@ function App() {
     };
 
     setMessages(prev => [...prev, userMsg]);
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
@@ -119,7 +157,7 @@ function App() {
       
       setMessages(prev => [...prev, streamingMsg]);
       
-      const response = await api.sendMessage(currentSessionId, userMsg.content, provider, (chunk) => {
+      const response = await api.sendMessage(currentSessionId, currentInput, provider, (chunk) => {
         setMessages(prev => {
           const newMsgs = [...prev];
           const target = newMsgs.find(m => m.id === tempId);
@@ -141,10 +179,17 @@ function App() {
       
       const artifact = extractArtifact(response.content);
       if (artifact) {
+        toast.success("Artifact generated — view in the right panel");
         setActiveArtifact(artifact);
       }
-    } catch (error) {
+      
+      // If this was the first message, refresh sessions to get the auto-generated title
+      if (messages.length === 0) {
+        loadSessions();
+      }
+    } catch (error: any) {
       console.error("Failed to send message", error);
+      toast.error("Message failed", { description: error.message || "Could not connect to the backend." });
     } finally {
       setIsLoading(false);
     }
@@ -152,49 +197,80 @@ function App() {
 
   return (
     <div className="app-container">
+      <Toaster theme="dark" position="top-right" closeButton richColors />
       {/* Sidebar */}
-      <div className="sidebar">
+      <aside className="sidebar" aria-label="Chat sessions">
         <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Zap size={20} color="var(--accent-primary)" /> Lenny Growth
         </h2>
-        <button className="new-chat-btn" onClick={handleNewChat}>
+        <button className="new-chat-btn" onClick={handleNewChat} aria-label="Start new chat">
           <PlusCircle size={16} /> New Chat
         </button>
-        <div className="session-list">
+        <nav className="session-list" aria-label="Chat history">
           {sessions.map(s => (
             <div 
               key={s.id} 
               className={`session-item ${currentSessionId === s.id ? 'active' : ''}`}
               onClick={() => setCurrentSessionId(s.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && setCurrentSessionId(s.id)}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
             >
-              {s.title}
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+              <button 
+                onClick={(e) => handleDeleteSession(s.id, e)}
+                className="delete-session-btn"
+                aria-label="Delete chat"
+                title="Delete chat"
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
           ))}
-        </div>
-      </div>
+        </nav>
+      </aside>
 
       {/* Main Chat */}
-      <div className="main-chat">
-        <div className="chat-header">
+      <main className="main-chat">
+        <header className="chat-header">
           <div style={{ fontWeight: 500 }}>Chat Session</div>
-          <div className="provider-toggle">
+          <div className="provider-toggle" role="radiogroup" aria-label="LLM Provider">
             <button 
               className={`provider-btn ${provider === 'anthropic' ? 'active' : ''}`}
-              onClick={() => setProvider('anthropic')}
+              onClick={() => { setProvider('anthropic'); toast.info("Switched to Anthropic Claude"); }}
+              role="radio"
+              aria-checked={provider === 'anthropic'}
             >
-              Claude 3.5
+              Anthropic Claude
             </button>
             <button 
               className={`provider-btn ${provider === 'ollama' ? 'active' : ''}`}
-              onClick={() => setProvider('ollama')}
+              onClick={() => { setProvider('ollama'); toast.info("Switched to Local (Ollama)"); }}
+              role="radio"
+              aria-checked={provider === 'ollama'}
             >
               Local (Ollama)
             </button>
           </div>
-        </div>
+        </header>
         
-        <div className="message-feed">
-          {messages.length === 0 && !isLoading && (
+        <div className="message-feed" role="log" aria-label="Chat messages">
+          {!isConnected && (
+            <div style={{ textAlign: 'center', marginTop: '3rem', padding: '2rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <Zap size={32} color="#ef4444" style={{ marginBottom: '1rem' }} />
+              <h2 style={{ color: '#ef4444', marginBottom: '0.5rem' }}>Backend Disconnected</h2>
+              <p style={{ color: 'var(--text-secondary)' }}>We couldn't reach the API server at port 8000. If you just started Docker, it may take a moment for the database and backend to initialize.</p>
+              <button 
+                onClick={loadSessions} 
+                style={{ marginTop: '1.5rem', background: 'var(--accent-primary)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {isConnected && messages.length === 0 && !isLoading && (
             <div className="welcome-screen" style={{ textAlign: 'center', marginTop: '3rem' }}>
               <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.5rem', marginBottom: '1rem', background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Lenny Growth Assistant</h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '3rem' }}>Ask a question about B2B growth, or ask me to write a "Ship 30 for 30" essay.</p>
@@ -209,17 +285,8 @@ function App() {
                   <button 
                     key={i} 
                     className="starter-prompt-card"
-                    onClick={() => {
-                      setInput(prompt);
-                      // Small timeout to allow state to update before sending
-                      setTimeout(() => {
-                        const fakeEvent = { key: 'Enter', shiftKey: false, preventDefault: () => {} } as any;
-                        const inputEl = document.querySelector('.chat-input') as HTMLTextAreaElement;
-                        if (inputEl) {
-                           inputEl.value = prompt;
-                        }
-                      }, 10);
-                    }}
+                    onClick={() => setInput(prompt)}
+                    aria-label={`Starter prompt: ${prompt.substring(0, 50)}...`}
                   >
                     {prompt}
                   </button>
@@ -229,43 +296,50 @@ function App() {
           )}
           {messages.map((msg, idx) => (
             <div key={idx} className="message">
-              <div className={`avatar ${msg.role}`}>
+              <div className={`avatar ${msg.role}`} aria-hidden="true">
                 {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
               </div>
               {msg.content === '' && msg.id && msg.id.startsWith("streaming-") ? (
-                <div className="message-content" style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}>
-                  <Loader2 size={16} className="animate-spin" style={{ marginRight: '0.5rem' }} />
-                  Thinking...
+                <div className="message-content">
+                  <div className="typing-indicator" aria-label="Assistant is typing">
+                    <div className="typing-dot"></div>
+                    <div className="typing-dot"></div>
+                    <div className="typing-dot"></div>
+                  </div>
                 </div>
               ) : (
                 <div className="message-content markdown-body">
                   <ReactMarkdown>{formatText(msg.content)}</ReactMarkdown>
+                  {/* Feedback buttons */}
                   {msg.role === 'assistant' && msg.id && !msg.id.startsWith("temp-") && !msg.id.startsWith("streaming-") && (
                     <div className="feedback-container" style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                       <button 
                         onClick={() => handleFeedback(msg.id, 1)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: feedbackMap[msg.id] === 1 ? 'var(--accent-primary)' : 'var(--text-secondary)' }}
                         title="Good response"
+                        aria-label="Thumbs up"
                       >
                         <ThumbsUp size={16} />
                       </button>
                       <button 
                         onClick={() => handleFeedback(msg.id, -1)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: feedbackMap[msg.id] === -1 ? 'red' : 'var(--text-secondary)' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: feedbackMap[msg.id] === -1 ? '#ef4444' : 'var(--text-secondary)' }}
                         title="Bad response"
+                        aria-label="Thumbs down"
                       >
                         <ThumbsDown size={16} />
                       </button>
                     </div>
                   )}
-                  {/* Follow-up Pills */}
+                  {/* Follow-up suggestion pills */}
                   {msg.role === 'assistant' && extractSuggestions(msg.content).length > 0 && !msg.id.startsWith("streaming-") && (
                     <div className="suggestions-container" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}>
                       {extractSuggestions(msg.content).map((q, i) => (
                         <button 
                           key={i}
                           onClick={() => setInput(q)}
-                          style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer' }}
+                          className="suggestion-pill"
+                          style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '6px 12px', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s' }}
                           onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
                           onMouseOut={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
                         >
@@ -295,13 +369,20 @@ function App() {
                 }
               }}
               rows={1}
+              aria-label="Chat message input"
+              autoFocus
             />
-            <button className="send-btn" onClick={handleSend} disabled={isLoading || !input.trim()}>
+            <button 
+              className="send-btn" 
+              onClick={handleSend} 
+              disabled={isLoading || !input.trim()}
+              aria-label="Send message"
+            >
               <Send size={18} />
             </button>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Artifact Pane */}
       {activeArtifact && (

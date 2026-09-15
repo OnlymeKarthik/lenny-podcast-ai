@@ -11,6 +11,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: 
@@ -20,10 +25,12 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/lenny_assistant
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      # If using local ollama, ensure host.docker.internal works for your OS
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./backend:/app
 
@@ -34,6 +41,8 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
     volumes:
       - ./frontend:/app
       - /app/node_modules

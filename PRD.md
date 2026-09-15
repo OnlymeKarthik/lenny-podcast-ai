@@ -19,10 +19,12 @@
 
 ### 1.4 Scope Choices
 **Included:**
-- RAG pipeline utilizing a local vector store (e.g., FAISS or ChromaDB) for simple, dependency-free setup.
-- Dual LLM support (Cloud provider like Anthropic, and Local via Ollama).
-- A specific "Ship 30 for 30" agentic skill that adheres to strict formatting constraints.
-- Secure HTML rendering in the frontend using a sandboxed iframe.
+- RAG pipeline utilizing a local vector store (ChromaDB) with hybrid retrieval (dense + BM25 sparse via Reciprocal Rank Fusion).
+- Dual LLM support (Anthropic Claude as cloud provider, Ollama as local provider) with a visible UI toggle.
+- A structured "Ship 30 for 30" writing skill encoding the 1-3-1 atomic essay framework (not a generic prompt).
+- An HTML artifact generation tool for visual content like infographics and landing pages.
+- Secure HTML rendering in the frontend using a fully sandboxed iframe (`sandbox=""` — no scripts, no same-origin).
+- Source citations in every grounded answer, naturally referencing the relevant podcast episode.
 
 **Excluded (and Why):**
 - **Authentication/Authorization:** Excluded to simplify the evaluator's setup experience. The focus is on the AI application layer, not user management.
@@ -30,12 +32,16 @@
 - **Complex Agentic Loops (e.g., executing arbitrary code):** The agent's tools are restricted to RAG retrieval and structured content generation to reduce the risk of infinite loops and latency.
 
 ### 1.5 Risks and Trade-offs
-- **Risk: Local LLM Latency and Quality.** Local models (e.g., via Ollama) may be slow or struggle with complex system prompts compared to Claude 3.5 Sonnet.
-  - *Trade-off:* We will optimize prompts to be clear and concise. The system will clearly indicate when it's generating to manage user expectations regarding latency.
+- **Risk: Local LLM Latency and Quality.** Local models (Llama 3.1 8B via Ollama) may be slow or struggle with complex system prompts compared to Claude Sonnet.
+  - *Trade-off:* Prompts are optimized for clarity. The UI shows a typing indicator during generation. Users can toggle to Anthropic Claude for higher quality.
 - **Risk: Hallucination.** The LLM might invent product advice not found in the transcripts.
-  - *Trade-off:* We will implement strict system prompts requiring the model to cite sources and explicitly state if the transcript does not contain the answer.
+  - *Trade-off:* Strict system prompts require the model to cite sources naturally and explicitly state when the transcript material doesn't support an answer. Conditional tool binding prevents false tool invocations on regular questions.
 - **Risk: Unsafe Artifact Rendering (XSS).** Generating HTML opens vectors for Cross-Site Scripting.
-  - *Trade-off:* We will use a sandboxed `iframe` with `sandbox="allow-scripts"` disabled by default, ensuring generated HTML can only render styling and structure, not execute malicious JS.
+  - *Trade-off:* The Artifact Viewer uses `<iframe sandbox="">` (the strictest sandbox — no scripts, no forms, no same-origin access). Markdown is rendered via `react-markdown` which never uses `dangerouslySetInnerHTML`.
+- **Risk: Data Leakage.** API keys could be exposed in committed code.
+  - *Trade-off:* All secrets are loaded from environment variables. `.env` files are `.gitignore`d. The `.env.example` contains only placeholder values.
+- **Risk: Provider Unavailability.** Ollama may be down or Anthropic API key may be missing.
+  - *Trade-off:* The `get_llm()` factory validates key presence before connection and returns actionable error messages. Errors are streamed to the chat gracefully rather than crashing the server.
 
 ## 2. Core Flows
 1. **Chat Initiation:** User opens the web app, which creates a new session in PostgreSQL.
@@ -45,9 +51,12 @@
 
 ## 3. Acceptance Criteria
 - **AC1 (RAG Retrieval):** The system must successfully query ChromaDB and inject relevant podcast transcripts into the LLM context.
-- **AC2 (Tool Calling):** The system must successfully execute the `generate_ship_30_essay` tool when explicitly requested, rendering the output as an artifact.
-- **AC3 (Hallucination Prevention):** The system must NOT attempt to execute the essay tool on standard queries (enforced via conditional tool binding).
-- **AC4 (UI/UX):** The frontend must elegantly handle loading states (spinners) and stream the LLM response without double-rendering message bubbles.
+- **AC2 (Source Grounding):** Every answer must naturally cite or identify the relevant Lenny's Podcast transcript/episode used.
+- **AC3 (Tool Calling):** The system must successfully execute the `generate_ship_30_essay` tool when explicitly requested, rendering the output as an artifact.
+- **AC4 (HTML Artifacts):** The system must generate complete HTML/CSS documents when requested, rendered securely in the Artifact Viewer.
+- **AC5 (Hallucination Prevention):** The system must NOT attempt to execute tools on standard queries (enforced via conditional tool binding).
+- **AC6 (UI/UX):** The frontend must elegantly handle loading states (typing indicator) and stream the LLM response without double-rendering message bubbles.
+- **AC7 (Graceful Failure):** Missing API keys, unavailable Ollama, and empty retrieval results must produce helpful error messages, not crashes.
 
 ## 4. Implementation Plan (Executed)
 - **Phase 1 (Foundation):** Set up Docker Compose, FastAPI, and Postgres schema (`sessions`, `messages`).

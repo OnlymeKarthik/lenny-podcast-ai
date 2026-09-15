@@ -1,7 +1,17 @@
+# Environment / Secrets
+.env
+.env.local
+backend/.env
+
 # Python / Backend
 backend/__pycache__/
+backend/**/__pycache__/
 backend/chroma_db/
 backend/lennys-podcast-transcripts/
+backend/*.log
+backend/test.db
+backend/.pytest_cache/
+backend/tests/.pytest_cache/
 
 # Node / Frontend
 frontend/node_modules/
@@ -9,3 +19,4 @@ frontend/dist/
 
 # OS
 .DS_Store
+Thumbs.db

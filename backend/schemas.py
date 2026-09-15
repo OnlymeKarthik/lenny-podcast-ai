@@ -36,7 +36,7 @@ class SessionResponse(SessionBase):
 
 class ChatRequest(BaseModel):
     message: str
-    llm_provider: str = "ollama" # or "anthropic"
+    llm_provider: str = "ollama"  # Options: "ollama" (local), "anthropic" (cloud)
 
 class FeedbackRequest(BaseModel):
     feedback: int # 1 or -1

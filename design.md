@@ -29,11 +29,13 @@ The application is structured as a dual-pane layout (on desktop):
 
 ## 5. Accessibility Considerations (a11y)
 
-- **Contrast:** Ensure all text passes WCAG AA contrast ratios against the dark background.
-- **Keyboard Navigation:** The input field should auto-focus on load. Users should be able to submit messages with `Enter` (and use `Shift+Enter` for new lines).
-- **Screen Readers:** Use semantic HTML tags (`<main>`, `<aside>`, `<nav>`) and ARIA labels for buttons (like the sidebar toggle or send button).
+- **Contrast:** All text passes WCAG AA contrast ratios against the dark background.
+- **Keyboard Navigation:** The input field auto-focuses on load. Users can submit messages with `Enter` (and use `Shift+Enter` for new lines). Session items are keyboard-navigable.
+- **Screen Readers:** Semantic HTML tags (`<main>`, `<aside>`, `<header>`, `<nav>`) provide document structure. ARIA labels on all interactive elements (send button, provider toggles, feedback buttons). `role="log"` on message feed, `role="radiogroup"` on provider toggle.
+- **Focus Indicators:** Input container highlights with accent color on focus for clear visibility.
 
 ## 6. Design Decisions
-- **Why Glassmorphism?** To provide a modern, "God-Tier" aesthetic that differentiates the tool from generic internal tools. The frosted glass (`backdrop-filter`) creates a sense of depth.
-- **Why hide source citations in text?** Raw markdown filenames clutter the conversational flow. We enforce a clean UI by strictly instructing the LLM to weave answers naturally without robotic citation paths.
-- **Why suggestion pills?** To reduce friction. Users often don't know what to ask next; dynamically generated follow-up questions dramatically improve engagement and task completion rates.
+- **Why Glassmorphism?** To provide a modern, premium aesthetic that differentiates the tool from generic internal tools. The frosted glass (`backdrop-filter`) creates depth and sophistication.
+- **Why natural source citations?** Answers naturally reference the relevant podcast episode (e.g., "As discussed on Lenny's Podcast...") rather than displaying raw file paths. This maintains conversational flow while satisfying the grounding requirement.
+- **Why suggestion pills?** Users often don't know what to ask next; dynamically generated follow-up questions dramatically improve engagement and task completion rates.
+- **Why a security footer in the Artifact Viewer?** Transparency about what the sandbox permits and blocks builds trust with both users and evaluators reviewing the security model.

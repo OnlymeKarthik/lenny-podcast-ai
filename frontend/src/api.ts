@@ -15,10 +15,26 @@ export interface Session {
   messages?: Message[];
 }
 
+/**
+ * Helper to handle HTTP errors consistently.
+ * Throws with the server error message or a generic one.
+ */
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      detail = err.detail || err.message || detail;
+    } catch { /* ignore parse errors */ }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
 export const api = {
   getSessions: async (): Promise<Session[]> => {
     const res = await fetch(`${API_BASE}/sessions`);
-    return res.json();
+    return handleResponse<Session[]>(res);
   },
   
   createSession: async (title: string = "New Chat"): Promise<Session> => {
@@ -27,22 +43,41 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title })
     });
-    return res.json();
+    return handleResponse<Session>(res);
   },
   
   getSession: async (id: string): Promise<Session> => {
     const res = await fetch(`${API_BASE}/sessions/${id}`);
-    return res.json();
+    return handleResponse<Session>(res);
+  },
+
+  deleteSession: async (id: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/sessions/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`Failed to delete session`);
   },
   
-  sendMessage: async (sessionId: string, message: string, provider: string, onToken?: (chunk: string) => void): Promise<Message> => {
+  sendMessage: async (
+    sessionId: string,
+    message: string,
+    provider: string,
+    onToken?: (chunk: string) => void
+  ): Promise<Message> => {
     const res = await fetch(`${API_BASE}/sessions/${sessionId}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, llm_provider: provider })
     });
     
-    if (!res.body) throw new Error("No response body");
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try {
+        const err = await res.json();
+        detail = err.detail || err.message || detail;
+      } catch { /* ignore */ }
+      throw new Error(detail);
+    }
+    
+    if (!res.body) throw new Error("No response body — streaming not supported");
     
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -65,10 +100,13 @@ export const api = {
   },
   
   submitFeedback: async (msgId: string, feedback: number): Promise<void> => {
-    await fetch(`${API_BASE}/messages/${msgId}/feedback`, {
+    const res = await fetch(`${API_BASE}/messages/${msgId}/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ feedback })
     });
+    if (!res.ok) {
+      console.warn("Feedback submission failed:", res.status);
+    }
   }
 };
